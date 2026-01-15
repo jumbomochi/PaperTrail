@@ -8,6 +8,7 @@ import 'package:paper_trail/features/family/providers/family_providers.dart';
 import 'package:paper_trail/features/categories/providers/category_providers.dart';
 import 'package:paper_trail/core/services/image_service.dart';
 import 'package:paper_trail/core/services/book_api_service.dart';
+import 'package:paper_trail/core/utils/validators.dart';
 import 'package:paper_trail/features/scanner/screens/scanner_screen.dart';
 
 class AddBookScreen extends ConsumerStatefulWidget {
@@ -133,12 +134,8 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
                       labelText: 'Title *',
                       prefixIcon: Icon(Icons.book),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a title';
-                      }
-                      return null;
-                    },
+                    maxLength: Validators.maxTitleLength,
+                    validator: Validators.validateTitle,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -147,12 +144,8 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
                       labelText: 'Author *',
                       prefixIcon: Icon(Icons.person),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter an author';
-                      }
-                      return null;
-                    },
+                    maxLength: Validators.maxAuthorLength,
+                    validator: Validators.validateAuthor,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -160,12 +153,14 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
                     decoration: InputDecoration(
                       labelText: 'ISBN',
                       prefixIcon: const Icon(Icons.qr_code),
+                      helperText: 'Enter ISBN-10 or ISBN-13',
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.search),
                         onPressed: _lookupByIsbn,
                         tooltip: 'Lookup ISBN',
                       ),
                     ),
+                    validator: Validators.validateIsbn,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -278,6 +273,8 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
                       alignLabelWithHint: true,
                     ),
                     maxLines: 4,
+                    maxLength: Validators.maxDescriptionLength,
+                    validator: Validators.validateDescription,
                   ),
                   const SizedBox(height: 16),
                   // Wishlist toggle
@@ -414,18 +411,30 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
   Future<void> _lookupByIsbn() async {
     final isbn = _isbnController.text.trim();
     if (isbn.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter an ISBN')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter an ISBN')),
+      );
+      return;
+    }
+
+    // Validate ISBN format first
+    final validationError = Validators.validateIsbn(isbn);
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationError)),
+      );
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final bookInfo = await _bookApiService.lookupByIsbn(isbn);
+      final result = await _bookApiService.lookupByIsbnWithResult(isbn);
 
-      if (bookInfo != null && mounted) {
+      if (!mounted) return;
+
+      if (result.isSuccess) {
+        final bookInfo = result.book!;
         setState(() {
           _titleController.text = bookInfo.title;
           _authorController.text = bookInfo.author;
@@ -446,13 +455,23 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
             _coverImagePath = null;
           }
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Book found!')));
-      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Found: ${bookInfo.title}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (result.isNotFound) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Book not found. Please enter details manually.'),
+          ),
+        );
+      } else if (result.isError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.errorMessage!),
+            backgroundColor: Colors.red,
           ),
         );
       }

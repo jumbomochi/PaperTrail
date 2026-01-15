@@ -6,6 +6,7 @@ import 'package:paper_trail/features/categories/providers/category_providers.dar
 import 'package:paper_trail/features/books/screens/add_book_screen.dart';
 import 'package:paper_trail/features/scanner/screens/scanner_screen.dart';
 import 'package:paper_trail/core/theme/app_theme.dart';
+import 'package:paper_trail/core/providers/theme_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -17,8 +18,24 @@ class HomeScreen extends ConsumerWidget {
     final familyCountAsync = ref.watch(familyMemberCountProvider);
     final categoryCountAsync = ref.watch(categoryCountProvider);
 
+    final currentTheme = ref.watch(themeProvider);
+    final isDark = currentTheme == AppThemeMode.dark ||
+        (currentTheme == AppThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('PaperTrail')),
+      appBar: AppBar(
+        title: const Text('PaperTrail'),
+        actions: [
+          IconButton(
+            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+            tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+            onPressed: () {
+              ref.read(themeProvider.notifier).toggleTheme();
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -29,7 +46,7 @@ class HomeScreen extends ConsumerWidget {
               'Your Library',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppTheme.primaryColor,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 8),
@@ -88,7 +105,7 @@ class HomeScreen extends ConsumerWidget {
                     loading: () => '-',
                     error: (_, __) => '0',
                   ),
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 _StatCard(
                   icon: Icons.bookmark,
@@ -202,7 +219,7 @@ class _QuickActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Icon(icon, size: 32, color: AppTheme.primaryColor),
+              Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 8),
               Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
             ],
