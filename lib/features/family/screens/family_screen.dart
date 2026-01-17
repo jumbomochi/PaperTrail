@@ -44,6 +44,7 @@ class FamilyScreen extends ConsumerWidget {
         error: (error, _) => Center(child: Text('Error: $error')),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'family_fab',
         onPressed: () => _showAddMemberDialog(context, ref),
         child: const Icon(Icons.person_add),
       ),

@@ -70,6 +70,7 @@ class CategoriesScreen extends ConsumerWidget {
         error: (error, _) => Center(child: Text('Error: $error')),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'categories_fab',
         onPressed: () => _showAddCategoryDialog(context, ref),
         child: const Icon(Icons.add),
       ),

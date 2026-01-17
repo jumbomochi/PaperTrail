@@ -124,6 +124,7 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'book_list_fab',
         onPressed: () => _navigateToAddBook(context),
         child: const Icon(Icons.add),
       ),

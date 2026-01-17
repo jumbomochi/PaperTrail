@@ -58,6 +58,7 @@ class WishlistScreen extends ConsumerWidget {
         error: (error, _) => Center(child: Text('Error: $error')),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'wishlist_fab',
         onPressed: () => _navigateToAddBook(context),
         child: const Icon(Icons.add),
       ),
