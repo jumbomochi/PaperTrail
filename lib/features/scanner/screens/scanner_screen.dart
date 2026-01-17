@@ -14,6 +14,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     facing: CameraFacing.back,
   );
   bool _hasScanned = false;
+  bool _torchOn = false;
 
   @override
   void dispose() {
@@ -28,15 +29,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
         title: const Text('Scan Barcode'),
         actions: [
           IconButton(
-            icon: ValueListenableBuilder<TorchState>(
-              valueListenable: _controller.torchState,
-              builder: (context, state, child) {
-                return Icon(
-                  state == TorchState.on ? Icons.flash_on : Icons.flash_off,
-                );
-              },
-            ),
-            onPressed: () => _controller.toggleTorch(),
+            icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
+            onPressed: () async {
+              await _controller.toggleTorch();
+              setState(() {
+                _torchOn = !_torchOn;
+              });
+            },
           ),
           IconButton(
             icon: const Icon(Icons.flip_camera_android),

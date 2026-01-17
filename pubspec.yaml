@@ -39,7 +39,7 @@ dependencies:
   path_provider: ^2.1.0
 
   # Barcode scanning
-  mobile_scanner: ^3.5.0
+  mobile_scanner: ^7.0.0
 
   # Image handling
   image_picker: ^1.0.0

@@ -45,9 +45,5 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>PaperTrail needs camera access to scan book barcodes and take cover photos</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>PaperTrail needs photo library access to select book cover images</string>
 </dict>
 </plist>
