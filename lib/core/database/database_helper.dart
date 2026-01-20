@@ -74,6 +74,57 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_books_category ON books (category_id)');
     await db.execute('CREATE INDEX idx_books_wishlist ON books (is_wishlist)');
     await db.execute('CREATE INDEX idx_books_isbn ON books (isbn)');
+
+    // Seed default categories
+    await _seedDefaultCategories(db);
+  }
+
+  Future<void> _seedDefaultCategories(Database db) async {
+    final now = DateTime.now().toIso8601String();
+    final defaultCategories = [
+      {'id': 'cat_fiction', 'name': 'Fiction', 'icon': '📚', 'created_at': now},
+      {
+        'id': 'cat_nonfiction',
+        'name': 'Non-Fiction',
+        'icon': '📖',
+        'created_at': now
+      },
+      {
+        'id': 'cat_science',
+        'name': 'Science',
+        'icon': '🔬',
+        'created_at': now
+      },
+      {
+        'id': 'cat_history',
+        'name': 'History',
+        'icon': '🏛️',
+        'created_at': now
+      },
+      {
+        'id': 'cat_biography',
+        'name': 'Biography',
+        'icon': '👤',
+        'created_at': now
+      },
+      {
+        'id': 'cat_children',
+        'name': 'Children',
+        'icon': '🧒',
+        'created_at': now
+      },
+      {
+        'id': 'cat_cooking',
+        'name': 'Cooking',
+        'icon': '🍳',
+        'created_at': now
+      },
+      {'id': 'cat_art', 'name': 'Art', 'icon': '🎨', 'created_at': now},
+    ];
+
+    for (final category in defaultCategories) {
+      await db.insert('categories', category);
+    }
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
