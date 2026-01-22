@@ -11,6 +11,12 @@ import 'package:paper_trail/features/family/providers/family_providers.dart';
 import 'package:paper_trail/features/family/models/family_member.dart';
 import 'package:paper_trail/shared/widgets/empty_state.dart';
 
+enum SortOption {
+  dateAdded,
+  title,
+  author,
+}
+
 class BookListScreen extends ConsumerStatefulWidget {
   const BookListScreen({super.key});
 
@@ -22,6 +28,7 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
   String _searchQuery = '';
   String? _selectedOwnerId;
   String? _selectedCategoryId;
+  SortOption _selectedSort = SortOption.dateAdded;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -40,6 +47,54 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
       appBar: AppBar(
         title: const Text('My Books'),
         actions: [
+          PopupMenuButton<SortOption>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort',
+            onSelected: (SortOption option) {
+              setState(() => _selectedSort = option);
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: SortOption.dateAdded,
+                child: Row(
+                  children: [
+                    if (_selectedSort == SortOption.dateAdded)
+                      const Icon(Icons.check, size: 20)
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    const Text('Date Added'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: SortOption.title,
+                child: Row(
+                  children: [
+                    if (_selectedSort == SortOption.title)
+                      const Icon(Icons.check, size: 20)
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    const Text('Title (A-Z)'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: SortOption.author,
+                child: Row(
+                  children: [
+                    if (_selectedSort == SortOption.author)
+                      const Icon(Icons.check, size: 20)
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    const Text('Author (A-Z)'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () => _showFilterSheet(context),
@@ -183,6 +238,16 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
     if (_selectedCategoryId != null) {
       filtered =
           filtered.where((b) => b.categoryId == _selectedCategoryId).toList();
+    }
+
+    // Apply sorting
+    switch (_selectedSort) {
+      case SortOption.title:
+        filtered.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      case SortOption.author:
+        filtered.sort((a, b) => a.author.toLowerCase().compareTo(b.author.toLowerCase()));
+      case SortOption.dateAdded:
+        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
 
     return filtered;

@@ -1,20 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:paper_trail/features/books/models/book.dart';
 import 'package:paper_trail/features/books/providers/book_providers.dart';
 import 'package:paper_trail/features/books/widgets/book_card.dart';
 import 'package:paper_trail/features/books/screens/book_detail_screen.dart';
 import 'package:paper_trail/features/books/screens/add_book_screen.dart';
 import 'package:paper_trail/shared/widgets/empty_state.dart';
 
-class WishlistScreen extends ConsumerWidget {
+enum WishlistSortOption {
+  dateAdded,
+  title,
+  author,
+}
+
+class WishlistScreen extends ConsumerStatefulWidget {
   const WishlistScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WishlistScreen> createState() => _WishlistScreenState();
+}
+
+class _WishlistScreenState extends ConsumerState<WishlistScreen> {
+  WishlistSortOption _selectedSort = WishlistSortOption.dateAdded;
+
+  @override
+  Widget build(BuildContext context) {
     final wishlistAsync = ref.watch(wishlistBooksProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Wishlist')),
+      appBar: AppBar(
+        title: const Text('Wishlist'),
+        actions: [
+          PopupMenuButton<WishlistSortOption>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort',
+            onSelected: (WishlistSortOption option) {
+              setState(() => _selectedSort = option);
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: WishlistSortOption.dateAdded,
+                child: Row(
+                  children: [
+                    if (_selectedSort == WishlistSortOption.dateAdded)
+                      const Icon(Icons.check, size: 20)
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    const Text('Date Added'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: WishlistSortOption.title,
+                child: Row(
+                  children: [
+                    if (_selectedSort == WishlistSortOption.title)
+                      const Icon(Icons.check, size: 20)
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    const Text('Title (A-Z)'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: WishlistSortOption.author,
+                child: Row(
+                  children: [
+                    if (_selectedSort == WishlistSortOption.author)
+                      const Icon(Icons.check, size: 20)
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    const Text('Author (A-Z)'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: wishlistAsync.when(
         data: (books) {
           if (books.isEmpty) {
@@ -26,6 +92,7 @@ class WishlistScreen extends ConsumerWidget {
               onButtonPressed: () => _navigateToAddBook(context),
             );
           }
+          final sortedBooks = _sortBooks(books);
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(wishlistBooksProvider);
@@ -38,9 +105,9 @@ class WishlistScreen extends ConsumerWidget {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
-              itemCount: books.length,
+              itemCount: sortedBooks.length,
               itemBuilder: (context, index) {
-                final book = books[index];
+                final book = sortedBooks[index];
                 return BookCard(
                   book: book,
                   onTap: () => Navigator.push(
@@ -63,6 +130,21 @@ class WishlistScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  List<Book> _sortBooks(List<Book> books) {
+    final sorted = List<Book>.from(books);
+    switch (_selectedSort) {
+      case WishlistSortOption.title:
+        sorted.sort(
+            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      case WishlistSortOption.author:
+        sorted.sort(
+            (a, b) => a.author.toLowerCase().compareTo(b.author.toLowerCase()));
+      case WishlistSortOption.dateAdded:
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+    return sorted;
   }
 
   void _navigateToAddBook(BuildContext context) {
