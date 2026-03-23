@@ -1,5 +1,7 @@
 import 'dart:developer' as developer;
 
+import 'package:sentry_flutter/sentry_flutter.dart';
+
 /// Log levels for categorizing log messages
 enum LogLevel {
   debug,
@@ -91,6 +93,20 @@ class LoggerService {
       error: error,
       stackTrace: stackTrace,
     );
+
+    // Report errors and warnings to Sentry
+    if (level == LogLevel.error && error != null) {
+      Sentry.captureException(
+        error,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'message': '${tagStr}$message'}),
+      );
+    } else if (level == LogLevel.warning || level == LogLevel.error) {
+      Sentry.addBreadcrumb(Breadcrumb(
+        message: '${tagStr}$message',
+        level: level == LogLevel.warning ? SentryLevel.warning : SentryLevel.error,
+      ));
+    }
   }
 
   int _logLevelToInt(LogLevel level) {

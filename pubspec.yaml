@@ -52,6 +52,9 @@ dependencies:
   intl: ^0.18.0
   uuid: ^4.2.0
 
+  # Crash reporting
+  sentry_flutter: ^8.12.0
+
   # Icons
   cupertino_icons: ^1.0.8
 
