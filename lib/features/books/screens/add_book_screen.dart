@@ -13,8 +13,9 @@ import 'package:paper_trail/features/scanner/screens/scanner_screen.dart';
 
 class AddBookScreen extends ConsumerStatefulWidget {
   final Book? editBook;
+  final String? initialIsbn;
 
-  const AddBookScreen({super.key, this.editBook});
+  const AddBookScreen({super.key, this.editBook, this.initialIsbn});
 
   @override
   ConsumerState<AddBookScreen> createState() => _AddBookScreenState();
@@ -59,6 +60,9 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
       _selectedOwnerId = book.ownerId;
       _selectedCategoryId = book.categoryId;
       _isWishlist = book.isWishlist;
+    } else if (widget.initialIsbn != null) {
+      _isbnController.text = widget.initialIsbn!;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _lookupByIsbn());
     }
   }
 
@@ -82,14 +86,7 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Book' : 'Add Book'),
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.qr_code_scanner),
-              onPressed: _scanBarcode,
-              tooltip: 'Scan Barcode',
-            ),
-        ],
+        actions: const [],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -98,6 +95,49 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  // ISBN entry card
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Enter an ISBN or scan a barcode for best results',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _isbnController,
+                            decoration: InputDecoration(
+                              labelText: 'ISBN',
+                              prefixIcon: const Icon(Icons.qr_code),
+                              helperText: 'Enter ISBN-10 or ISBN-13',
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.search),
+                                onPressed: _lookupByIsbn,
+                                tooltip: 'Lookup ISBN',
+                              ),
+                            ),
+                            validator: Validators.validateIsbn,
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _scanBarcode,
+                              icon: const Icon(Icons.qr_code_scanner),
+                              label: const Text('Scan Barcode'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   // Cover image section
                   Center(
                     child: GestureDetector(
@@ -146,21 +186,6 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
                     ),
                     maxLength: Validators.maxAuthorLength,
                     validator: Validators.validateAuthor,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _isbnController,
-                    decoration: InputDecoration(
-                      labelText: 'ISBN',
-                      prefixIcon: const Icon(Icons.qr_code),
-                      helperText: 'Enter ISBN-10 or ISBN-13',
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: _lookupByIsbn,
-                        tooltip: 'Lookup ISBN',
-                      ),
-                    ),
-                    validator: Validators.validateIsbn,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -248,7 +273,11 @@ class _AddBookScreenState extends ConsumerState<AddBookScreen> {
                               value: category.id,
                               child: Row(
                                 children: [
-                                  Text(category.icon),
+                                  Image.asset(
+                                    'assets/icons/categories/${category.icon}.png',
+                                    width: 20,
+                                    height: 20,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(category.name),
                                 ],
