@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -82,44 +82,14 @@ class DatabaseHelper {
   Future<void> _seedDefaultCategories(Database db) async {
     final now = DateTime.now().toIso8601String();
     final defaultCategories = [
-      {'id': 'cat_fiction', 'name': 'Fiction', 'icon': '📚', 'created_at': now},
-      {
-        'id': 'cat_nonfiction',
-        'name': 'Non-Fiction',
-        'icon': '📖',
-        'created_at': now
-      },
-      {
-        'id': 'cat_science',
-        'name': 'Science',
-        'icon': '🔬',
-        'created_at': now
-      },
-      {
-        'id': 'cat_history',
-        'name': 'History',
-        'icon': '🏛️',
-        'created_at': now
-      },
-      {
-        'id': 'cat_biography',
-        'name': 'Biography',
-        'icon': '👤',
-        'created_at': now
-      },
-      {
-        'id': 'cat_children',
-        'name': 'Children',
-        'icon': '🧒',
-        'created_at': now
-      },
-      {
-        'id': 'cat_cooking',
-        'name': 'Cooking',
-        'icon': '🍳',
-        'created_at': now
-      },
-      {'id': 'cat_art', 'name': 'Art', 'icon': '🎨', 'created_at': now},
+      {'id': 'cat_fiction', 'name': 'Fiction', 'icon': 'icon_fiction', 'created_at': now},
+      {'id': 'cat_nonfiction', 'name': 'Non-Fiction', 'icon': 'icon_non_fiction', 'created_at': now},
+      {'id': 'cat_science', 'name': 'Science', 'icon': 'icon_science', 'created_at': now},
+      {'id': 'cat_history', 'name': 'History', 'icon': 'icon_history', 'created_at': now},
+      {'id': 'cat_biography', 'name': 'Biography', 'icon': 'icon_biography', 'created_at': now},
+      {'id': 'cat_children', 'name': 'Children', 'icon': 'icon_children', 'created_at': now},
+      {'id': 'cat_cooking', 'name': 'Cooking', 'icon': 'icon_cooking', 'created_at': now},
+      {'id': 'cat_art', 'name': 'Art', 'icon': 'icon_art', 'created_at': now},
     ];
 
     for (final category in defaultCategories) {
@@ -128,7 +98,27 @@ class DatabaseHelper {
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
-    // Handle future migrations here
+    if (oldVersion < 2) {
+      // Migrate emoji icons to asset keys
+      const emojiToAsset = {
+        '📚': 'icon_fiction',
+        '📖': 'icon_non_fiction',
+        '🔬': 'icon_science',
+        '🏛️': 'icon_history',
+        '👤': 'icon_biography',
+        '🧒': 'icon_children',
+        '🍳': 'icon_cooking',
+        '🎨': 'icon_art',
+      };
+      for (final entry in emojiToAsset.entries) {
+        await db.update(
+          'categories',
+          {'icon': entry.value},
+          where: 'icon = ?',
+          whereArgs: [entry.key],
+        );
+      }
+    }
   }
 
   Future<void> close() async {

@@ -151,9 +151,10 @@ class BookDetailScreen extends ConsumerWidget {
                               'Category',
                               Row(
                                 children: [
-                                  Text(
-                                    category.icon,
-                                    style: const TextStyle(fontSize: 20),
+                                  Image.asset(
+                                    'assets/icons/categories/${category.icon}.png',
+                                    width: 24,
+                                    height: 24,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(category.name),

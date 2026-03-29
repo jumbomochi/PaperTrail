@@ -167,7 +167,18 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
                           ),
                         );
                         return Chip(
-                          label: Text('${category.icon} ${category.name}'),
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/icons/categories/${category.icon}.png',
+                                width: 18,
+                                height: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(category.name),
+                            ],
+                          ),
                           deleteIcon: const Icon(Icons.close, size: 18),
                           onDeleted: () {
                             setState(() => _selectedCategoryId = null);
@@ -358,9 +369,10 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
                         ),
                         ...categories.map((category) {
                           return ListTile(
-                            leading: Text(
-                              category.icon,
-                              style: const TextStyle(fontSize: 24),
+                            leading: Image.asset(
+                              'assets/icons/categories/${category.icon}.png',
+                              width: 28,
+                              height: 28,
                             ),
                             title: Text(category.name),
                             selected: _selectedCategoryId == category.id,
