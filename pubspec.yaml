@@ -52,6 +52,10 @@ dependencies:
   intl: ^0.18.0
   uuid: ^4.2.0
 
+  # Backup
+  share_plus: ^10.0.0
+  file_picker: ^8.0.0
+
   # Crash reporting
   sentry_flutter: ^8.12.0
 
@@ -83,10 +87,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/icons/categories/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
