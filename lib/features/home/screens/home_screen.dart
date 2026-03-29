@@ -7,6 +7,7 @@ import 'package:paper_trail/features/books/screens/add_book_screen.dart';
 import 'package:paper_trail/features/scanner/screens/scanner_screen.dart';
 import 'package:paper_trail/core/theme/app_theme.dart';
 import 'package:paper_trail/core/providers/theme_provider.dart';
+import 'package:paper_trail/features/settings/screens/settings_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -32,6 +33,16 @@ class HomeScreen extends ConsumerWidget {
             tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
             onPressed: () {
               ref.read(themeProvider.notifier).toggleTheme();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
             },
           ),
         ],
@@ -190,10 +201,8 @@ class HomeScreen extends ConsumerWidget {
     if (isbn != null && context.mounted) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const AddBookScreen()),
-      ).then((_) {
-        // The AddBookScreen will handle the ISBN lookup
-      });
+        MaterialPageRoute(builder: (_) => AddBookScreen(initialIsbn: isbn)),
+      );
     }
   }
 }
