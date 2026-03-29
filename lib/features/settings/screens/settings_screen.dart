@@ -26,6 +26,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isImporting = false;
 
   Future<void> _exportLibrary() async {
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : Rect.zero;
+
     setState(() => _isExporting = true);
     try {
       final jsonString = await _backupService.exportToJson();
@@ -36,7 +41,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsString(jsonString);
 
-      await Share.shareXFiles([XFile(file.path)]);
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'PaperTrail Backup',
+        sharePositionOrigin: origin,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
