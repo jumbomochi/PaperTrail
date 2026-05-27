@@ -40,7 +40,9 @@ CREATE TABLE quotes (
   FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_quotes_book_id ON quotes(book_id);
-CREATE INDEX idx_quotes_text    ON quotes(text);
+-- No index on quotes.text: a plain B-tree does not accelerate
+-- LIKE '%keyword%' (leading wildcard bypasses the index), and
+-- the spec accepts full-scan search at expected collection size.
 ```
 
 Migration runs in `database_helper.dart`'s `_onUpgrade` from v2 → v3. No data backfill — new columns/table start empty.
