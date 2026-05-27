@@ -1,11 +1,19 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:uuid/uuid.dart';
+import 'package:paper_trail/features/books/models/book.dart';
+import 'package:paper_trail/features/books/models/quote.dart';
 import 'package:paper_trail/features/books/providers/book_providers.dart';
+import 'package:paper_trail/features/books/providers/quote_providers.dart';
 import 'package:paper_trail/features/family/providers/family_providers.dart';
 import 'package:paper_trail/features/categories/providers/category_providers.dart';
 import 'package:paper_trail/features/books/screens/add_book_screen.dart';
+import 'package:paper_trail/features/books/widgets/quote_editor.dart';
+import 'package:paper_trail/features/books/widgets/quotes_list.dart';
 import 'package:paper_trail/features/books/widgets/review_editor.dart';
 import 'package:paper_trail/features/books/widgets/review_section.dart';
 
@@ -19,6 +27,7 @@ class BookDetailScreen extends ConsumerWidget {
     final bookAsync = ref.watch(bookByIdProvider(bookId));
     final familyAsync = ref.watch(familyNotifierProvider);
     final categoriesAsync = ref.watch(categoryNotifierProvider);
+    final quotesAsync = ref.watch(quotesForBookProvider(bookId));
 
     return bookAsync.when(
       data: (book) {
@@ -216,6 +225,54 @@ class BookDetailScreen extends ConsumerWidget {
                     await ref.read(bookNotifierProvider.notifier).updateBook(next);
                   },
                 ),
+                quotesAsync.when(
+                  data: (quotes) => QuotesList(
+                    quotes: quotes,
+                    onAddPressed: () async {
+                      final result = await openQuoteEditor(
+                        context,
+                        bookTitle: book.title,
+                      );
+                      if (result == null || result.isDelete) return;
+                      final quote = Quote(
+                        id: const Uuid().v4(),
+                        bookId: book.id,
+                        text: result.text!,
+                        page: result.page,
+                        createdAt: DateTime.now(),
+                      );
+                      await ref.read(quoteNotifierProvider.notifier).addQuote(quote);
+                    },
+                    onQuoteTapped: (q) async {
+                      final result = await openQuoteEditor(
+                        context,
+                        bookTitle: book.title,
+                        initialText: q.text,
+                        initialPage: q.page,
+                      );
+                      if (result == null) return;
+                      if (result.isDelete) {
+                        await ref.read(quoteNotifierProvider.notifier).deleteQuote(
+                              id: q.id,
+                              bookId: q.bookId,
+                            );
+                      } else {
+                        await ref.read(quoteNotifierProvider.notifier).updateQuote(
+                              q.copyWith(text: result.text!, page: result.page),
+                            );
+                      }
+                    },
+                    onQuoteLongPressed: (q) => _showQuoteActions(context, ref, book, q),
+                  ),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, _) => Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Failed to load quotes: $e'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -305,5 +362,62 @@ class BookDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+Future<void> _showQuoteActions(
+  BuildContext context,
+  WidgetRef ref,
+  Book book,
+  Quote quote,
+) async {
+  // Capture box before async gap for sharePositionOrigin on iPad.
+  final box = context.findRenderObject() as RenderBox?;
+  final action = await showModalBottomSheet<String>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.copy),
+            title: const Text('Copy'),
+            onTap: () => Navigator.of(ctx).pop('copy'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.share),
+            title: const Text('Share'),
+            onTap: () => Navigator.of(ctx).pop('share'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline),
+            title: const Text('Delete'),
+            onTap: () => Navigator.of(ctx).pop('delete'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (action == null) return;
+  final shareText = quote.page != null
+      ? '"${quote.text}" — ${book.title}, p.${quote.page}'
+      : '"${quote.text}" — ${book.title}';
+  switch (action) {
+    case 'copy':
+      await Clipboard.setData(ClipboardData(text: shareText));
+      break;
+    case 'share':
+      await Share.share(
+        shareText,
+        sharePositionOrigin:
+            box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+      );
+      break;
+    case 'delete':
+      await ref.read(quoteNotifierProvider.notifier).deleteQuote(
+            id: quote.id,
+            bookId: quote.bookId,
+          );
+      break;
   }
 }
