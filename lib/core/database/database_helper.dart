@@ -65,7 +65,7 @@ class DatabaseHelper {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         review TEXT,
-        review_updated_at INTEGER,
+        review_updated_at INTEGER,  -- epoch ms, null until first review
         FOREIGN KEY (owner_id) REFERENCES family_members (id) ON DELETE SET NULL,
         FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE SET NULL
       )
@@ -84,12 +84,11 @@ class DatabaseHelper {
         book_id TEXT NOT NULL,
         text TEXT NOT NULL,
         page INTEGER,
-        created_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,  -- epoch ms
         FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
       )
     ''');
     await db.execute('CREATE INDEX idx_quotes_book_id ON quotes (book_id)');
-    await db.execute('CREATE INDEX idx_quotes_text ON quotes (text)');
 
     // Seed default categories
     await _seedDefaultCategories(db);
@@ -137,6 +136,7 @@ class DatabaseHelper {
     }
     if (oldVersion < 3) {
       await db.execute('ALTER TABLE books ADD COLUMN review TEXT');
+      // epoch ms, null until first review
       await db.execute('ALTER TABLE books ADD COLUMN review_updated_at INTEGER');
       await db.execute('''
         CREATE TABLE quotes (
@@ -144,12 +144,11 @@ class DatabaseHelper {
           book_id TEXT NOT NULL,
           text TEXT NOT NULL,
           page INTEGER,
-          created_at INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,  -- epoch ms
           FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
         )
       ''');
       await db.execute('CREATE INDEX idx_quotes_book_id ON quotes (book_id)');
-      await db.execute('CREATE INDEX idx_quotes_text ON quotes (text)');
     }
   }
 
