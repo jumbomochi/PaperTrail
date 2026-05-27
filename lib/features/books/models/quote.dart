@@ -1,4 +1,6 @@
 class Quote {
+  static const Object _unset = Object();
+
   final String id;
   final String bookId;
   final String text;
@@ -37,14 +39,14 @@ class Quote {
     String? id,
     String? bookId,
     String? text,
-    int? page,
+    Object? page = _unset,
     DateTime? createdAt,
   }) {
     return Quote(
       id: id ?? this.id,
       bookId: bookId ?? this.bookId,
       text: text ?? this.text,
-      page: page ?? this.page,
+      page: identical(page, _unset) ? this.page : page as int?,
       createdAt: createdAt ?? this.createdAt,
     );
   }

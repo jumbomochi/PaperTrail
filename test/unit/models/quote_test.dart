@@ -65,5 +65,21 @@ void main() {
       expect(updated.page, equals(99));
       expect(updated.createdAt, equals(testTime));
     });
+
+    test('copyWith can clear page by passing null explicitly', () {
+      final original = Quote(
+        id: 'q-1', bookId: 'b-1', text: 'A', page: 5, createdAt: testTime,
+      );
+      final cleared = original.copyWith(page: null);
+      expect(cleared.page, isNull);
+    });
+
+    test('copyWith preserves page when page param omitted', () {
+      final original = Quote(
+        id: 'q-1', bookId: 'b-1', text: 'A', page: 5, createdAt: testTime,
+      );
+      final unchanged = original.copyWith(text: 'B');
+      expect(unchanged.page, equals(5));
+    });
   });
 }
