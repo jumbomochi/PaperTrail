@@ -1,4 +1,6 @@
 class Book {
+  static const Object _unset = Object();
+
   final String id;
   final String? isbn;
   final String title;
@@ -99,8 +101,8 @@ class Book {
     bool? isWishlist,
     DateTime? createdAt,
     DateTime? updatedAt,
-    String? review,
-    DateTime? reviewUpdatedAt,
+    Object? review = _unset,
+    Object? reviewUpdatedAt = _unset,
   }) {
     return Book(
       id: id ?? this.id,
@@ -118,8 +120,10 @@ class Book {
       isWishlist: isWishlist ?? this.isWishlist,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      review: review ?? this.review,
-      reviewUpdatedAt: reviewUpdatedAt ?? this.reviewUpdatedAt,
+      review: identical(review, _unset) ? this.review : review as String?,
+      reviewUpdatedAt: identical(reviewUpdatedAt, _unset)
+          ? this.reviewUpdatedAt
+          : reviewUpdatedAt as DateTime?,
     );
   }
 

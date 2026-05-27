@@ -270,6 +270,18 @@ void main() {
         expect(updated.review, equals('New thoughts'));
         expect(updated.reviewUpdatedAt, equals(later));
       });
+
+      test('copyWith can clear review by passing null explicitly', () {
+        final book = createTestBook(review: 'old');
+        final cleared = book.copyWith(review: null);
+        expect(cleared.review, isNull);
+      });
+
+      test('copyWith preserves review when review param omitted', () {
+        final book = createTestBook(review: 'old');
+        final unchanged = book.copyWith(title: 'new title');
+        expect(unchanged.review, equals('old'));
+      });
     });
   });
 }
