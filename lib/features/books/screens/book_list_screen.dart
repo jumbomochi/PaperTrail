@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paper_trail/features/books/models/book.dart';
+import 'package:paper_trail/features/books/models/book_search_result.dart';
+import 'package:paper_trail/features/books/models/quote.dart';
 import 'package:paper_trail/features/books/providers/book_providers.dart';
+import 'package:paper_trail/features/books/providers/quote_providers.dart';
+import 'package:paper_trail/features/books/utils/book_search.dart';
 import 'package:paper_trail/features/books/widgets/book_card.dart';
 import 'package:paper_trail/features/books/screens/book_detail_screen.dart';
 import 'package:paper_trail/features/books/screens/add_book_screen.dart';
@@ -30,10 +36,12 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
   String? _selectedCategoryId;
   SortOption _selectedSort = SortOption.dateAdded;
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -42,6 +50,14 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
     final booksAsync = ref.watch(bookNotifierProvider);
     final familyAsync = ref.watch(familyNotifierProvider);
     final categoryAsync = ref.watch(categoryNotifierProvider);
+
+    final quoteCountsAsync = ref.watch(quoteCountsProvider);
+    final allQuotesAsync = ref.watch(allQuotesProvider);
+
+    final Map<String, int> quoteCounts =
+        quoteCountsAsync.maybeWhen(data: (m) => m, orElse: () => const {});
+    final allQuotes =
+        allQuotesAsync.maybeWhen(data: (l) => l, orElse: () => const <Quote>[]);
 
     return Scaffold(
       appBar: AppBar(
@@ -114,6 +130,7 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
+                          _searchDebounce?.cancel();
                           _searchController.clear();
                           setState(() => _searchQuery = '');
                         },
@@ -121,7 +138,11 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
                     : null,
               ),
               onChanged: (value) {
-                setState(() => _searchQuery = value);
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(const Duration(milliseconds: 200), () {
+                  if (!mounted) return;
+                  setState(() => _searchQuery = value);
+                });
               },
             ),
           ),
@@ -194,8 +215,15 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
           Expanded(
             child: booksAsync.when(
               data: (books) {
-                final filteredBooks = _filterBooks(books);
-                if (filteredBooks.isEmpty) {
+                final results = searchAndFilterBooks(
+                  books: books,
+                  allQuotes: allQuotes,
+                  query: _searchQuery,
+                  ownerId: _selectedOwnerId,
+                  categoryId: _selectedCategoryId,
+                  sort: _bookSearchSort,
+                );
+                if (results.isEmpty) {
                   return EmptyState(
                     icon: Icons.library_books,
                     title: books.isEmpty ? 'No books yet' : 'No matching books',
@@ -203,17 +231,15 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
                         ? 'Start by adding your first book'
                         : 'Try a different search or filter',
                     buttonText: books.isEmpty ? 'Add Book' : null,
-                    onButtonPressed: books.isEmpty
-                        ? () => _navigateToAddBook(context)
-                        : null,
+                    onButtonPressed:
+                        books.isEmpty ? () => _navigateToAddBook(context) : null,
                   );
                 }
                 return familyAsync.when(
-                  data: (members) {
-                    return _buildBookGrid(filteredBooks, members);
-                  },
-                  loading: () => _buildBookGrid(filteredBooks, []),
-                  error: (_, __) => _buildBookGrid(filteredBooks, []),
+                  data: (members) =>
+                      _buildBookGrid(results, members, quoteCounts),
+                  loading: () => _buildBookGrid(results, [], quoteCounts),
+                  error: (_, __) => _buildBookGrid(results, [], quoteCounts),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -230,64 +256,87 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
     );
   }
 
-  List<Book> _filterBooks(List<Book> books) {
-    var filtered = books.where((b) => !b.isWishlist).toList();
-
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      filtered = filtered.where((book) {
-        return book.title.toLowerCase().contains(query) ||
-            book.author.toLowerCase().contains(query) ||
-            (book.isbn?.toLowerCase().contains(query) ?? false);
-      }).toList();
-    }
-
-    if (_selectedOwnerId != null) {
-      filtered = filtered.where((b) => b.ownerId == _selectedOwnerId).toList();
-    }
-
-    if (_selectedCategoryId != null) {
-      filtered =
-          filtered.where((b) => b.categoryId == _selectedCategoryId).toList();
-    }
-
-    // Apply sorting
+  BookSearchSort get _bookSearchSort {
     switch (_selectedSort) {
       case SortOption.title:
-        filtered.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        return BookSearchSort.title;
       case SortOption.author:
-        filtered.sort((a, b) => a.author.toLowerCase().compareTo(b.author.toLowerCase()));
+        return BookSearchSort.author;
       case SortOption.dateAdded:
-        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return BookSearchSort.dateAdded;
     }
-
-    return filtered;
   }
 
-  Widget _buildBookGrid(List<Book> books, List<FamilyMember> members) {
+  Widget _buildBookGrid(
+    List<BookSearchResult> results,
+    List<FamilyMember> members,
+    Map<String, int> quoteCounts,
+  ) {
     return RefreshIndicator(
       onRefresh: () async {
         ref.read(bookNotifierProvider.notifier).loadBooks();
+        ref.invalidate(quoteCountsProvider);
+        ref.invalidate(allQuotesProvider);
       },
       child: GridView.builder(
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.65,
+          childAspectRatio: 0.60,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
-        itemCount: books.length,
+        itemCount: results.length,
         itemBuilder: (context, index) {
-          final book = books[index];
+          final result = results[index];
+          final book = result.book;
           final owner = members.where((m) => m.id == book.ownerId).firstOrNull;
-          return BookCard(
-            book: book,
-            ownerName: owner?.name,
-            ownerColor: owner?.color,
-            onTap: () => _navigateToBookDetail(context, book),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: BookCard(
+                  book: book,
+                  ownerName: owner?.name,
+                  ownerColor: owner?.color,
+                  quoteCount: quoteCounts[book.id] ?? 0,
+                  onTap: () => _navigateToBookDetail(context, book),
+                ),
+              ),
+              if (result.snippet != null) _buildSnippetRow(result.snippet!),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSnippetRow(MatchSnippet match) {
+    final label = match.source == MatchSource.quote
+        ? (match.page != null
+            ? '— quote, p.${match.page}'
+            : '— quote')
+        : '— review';
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: RichText(
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        text: TextSpan(
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+          children: [
+            TextSpan(text: match.snippet.prefix),
+            TextSpan(
+              text: match.snippet.matched,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(text: match.snippet.suffix),
+            TextSpan(
+              text: ' $label',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ],
+        ),
       ),
     );
   }
