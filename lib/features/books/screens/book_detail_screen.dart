@@ -6,6 +6,8 @@ import 'package:paper_trail/features/books/providers/book_providers.dart';
 import 'package:paper_trail/features/family/providers/family_providers.dart';
 import 'package:paper_trail/features/categories/providers/category_providers.dart';
 import 'package:paper_trail/features/books/screens/add_book_screen.dart';
+import 'package:paper_trail/features/books/widgets/review_editor.dart';
+import 'package:paper_trail/features/books/widgets/review_section.dart';
 
 class BookDetailScreen extends ConsumerWidget {
   final String bookId;
@@ -195,6 +197,24 @@ class BookDetailScreen extends ConsumerWidget {
                       ],
                     ],
                   ),
+                ),
+                ReviewSection(
+                  review: book.review,
+                  onEditPressed: () async {
+                    final newText = await openReviewEditor(
+                      context,
+                      bookTitle: book.title,
+                      initial: book.review,
+                    );
+                    if (newText == null) return;
+                    final now = DateTime.now();
+                    final next = book.copyWith(
+                      review: newText.isEmpty ? null : newText,
+                      reviewUpdatedAt: now,
+                      updatedAt: now,
+                    );
+                    await ref.read(bookNotifierProvider.notifier).updateBook(next);
+                  },
                 ),
               ],
             ),
