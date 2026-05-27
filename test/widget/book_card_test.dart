@@ -274,5 +274,58 @@ void main() {
       final ownerText = tester.widget<Text>(find.text('Jane'));
       expect(ownerText.style?.color, equals(ownerColor));
     });
+
+    testWidgets('shows star when book has a review',
+        (WidgetTester tester) async {
+      final book = createTestBook().copyWith(review: 'Great');
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 300,
+              child: BookCard(book: book, quoteCount: 0),
+            ),
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.star), findsOneWidget);
+    });
+
+    testWidgets('shows quote count badge when quoteCount > 0',
+        (WidgetTester tester) async {
+      final book = createTestBook();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 300,
+              child: BookCard(book: book, quoteCount: 3),
+            ),
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.format_quote), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+    });
+
+    testWidgets('shows no indicators when no review and zero quotes',
+        (WidgetTester tester) async {
+      final book = createTestBook();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 300,
+              child: BookCard(book: book, quoteCount: 0),
+            ),
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.star), findsNothing);
+      expect(find.byIcon(Icons.format_quote), findsNothing);
+    });
   });
 }

@@ -8,6 +8,7 @@ class BookCard extends StatelessWidget {
   final VoidCallback? onTap;
   final String? ownerName;
   final Color? ownerColor;
+  final int quoteCount;
 
   const BookCard({
     super.key,
@@ -15,6 +16,7 @@ class BookCard extends StatelessWidget {
     this.onTap,
     this.ownerName,
     this.ownerColor,
+    this.quoteCount = 0,
   });
 
   @override
@@ -34,14 +36,23 @@ class BookCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      book.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            book.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        _buildIndicators(),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -111,6 +122,32 @@ class BookCard extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
+    );
+  }
+
+  Widget _buildIndicators() {
+    final hasReview = (book.review ?? '').isNotEmpty;
+    if (!hasReview && quoteCount == 0) {
+      return const SizedBox.shrink();
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasReview)
+          Icon(Icons.star, size: 14, color: Colors.amber.shade700),
+        if (quoteCount > 0) ...[
+          if (hasReview) const SizedBox(width: 4),
+          Icon(Icons.format_quote, size: 14, color: Colors.grey.shade600),
+          const SizedBox(width: 2),
+          Text(
+            '$quoteCount',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
