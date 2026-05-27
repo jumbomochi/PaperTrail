@@ -11,6 +11,8 @@ void main() {
       String title = 'Test Book',
       String author = 'Test Author',
       bool isWishlist = false,
+      String? review,
+      DateTime? reviewUpdatedAt,
     }) {
       return Book(
         id: id,
@@ -28,6 +30,8 @@ void main() {
         isWishlist: isWishlist,
         createdAt: testDate,
         updatedAt: testDate,
+        review: review,
+        reviewUpdatedAt: reviewUpdatedAt,
       );
     }
 
@@ -217,6 +221,51 @@ void main() {
         expect(restored.author, equals(original.author));
         expect(restored.isWishlist, equals(original.isWishlist));
         expect(restored.createdAt, equals(original.createdAt));
+      });
+    });
+
+    group('review fields', () {
+      test('review and reviewUpdatedAt default to null', () {
+        final book = createTestBook();
+        expect(book.review, isNull);
+        expect(book.reviewUpdatedAt, isNull);
+      });
+
+      test('toMap serializes review and review_updated_at', () {
+        final reviewTime = DateTime.utc(2026, 5, 1, 12);
+        final book = createTestBook(
+          review: 'Brilliant pacing',
+          reviewUpdatedAt: reviewTime,
+        );
+        final map = book.toMap();
+        expect(map['review'], equals('Brilliant pacing'));
+        expect(map['review_updated_at'], equals(reviewTime.millisecondsSinceEpoch));
+      });
+
+      test('toMap emits nulls when review is unset', () {
+        final book = createTestBook();
+        final map = book.toMap();
+        expect(map['review'], isNull);
+        expect(map['review_updated_at'], isNull);
+      });
+
+      test('fromMap parses review and review_updated_at', () {
+        final reviewTime = DateTime.utc(2026, 5, 1, 12);
+        final book = createTestBook(
+          review: 'Great book',
+          reviewUpdatedAt: reviewTime,
+        );
+        final roundTripped = Book.fromMap(book.toMap());
+        expect(roundTripped.review, equals('Great book'));
+        expect(roundTripped.reviewUpdatedAt, equals(reviewTime));
+      });
+
+      test('copyWith updates review and reviewUpdatedAt', () {
+        final book = createTestBook();
+        final later = DateTime.utc(2026, 5, 2);
+        final updated = book.copyWith(review: 'New thoughts', reviewUpdatedAt: later);
+        expect(updated.review, equals('New thoughts'));
+        expect(updated.reviewUpdatedAt, equals(later));
       });
     });
   });

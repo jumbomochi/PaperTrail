@@ -14,6 +14,8 @@ class Book {
   final bool isWishlist;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? review;
+  final DateTime? reviewUpdatedAt;
 
   Book({
     required this.id,
@@ -31,6 +33,8 @@ class Book {
     this.isWishlist = false,
     required this.createdAt,
     required this.updatedAt,
+    this.review,
+    this.reviewUpdatedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -50,6 +54,8 @@ class Book {
       'is_wishlist': isWishlist ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'review': review,
+      'review_updated_at': reviewUpdatedAt?.toUtc().millisecondsSinceEpoch,
     };
   }
 
@@ -70,6 +76,10 @@ class Book {
       isWishlist: (map['is_wishlist'] as int?) == 1,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
+      review: map['review'] as String?,
+      reviewUpdatedAt: map['review_updated_at'] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(map['review_updated_at'] as int, isUtc: true),
     );
   }
 
@@ -89,6 +99,8 @@ class Book {
     bool? isWishlist,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? review,
+    DateTime? reviewUpdatedAt,
   }) {
     return Book(
       id: id ?? this.id,
@@ -106,6 +118,8 @@ class Book {
       isWishlist: isWishlist ?? this.isWishlist,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      review: review ?? this.review,
+      reviewUpdatedAt: reviewUpdatedAt ?? this.reviewUpdatedAt,
     );
   }
 
