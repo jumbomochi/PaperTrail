@@ -31,7 +31,9 @@ TextSnippet? buildSnippet({
     );
   }
 
-  final remaining = maxLength - query.length;
+  final effectiveMax =
+      query.length > maxLength ? query.length : maxLength;
+  final remaining = effectiveMax - query.length;
   final halfBefore = remaining ~/ 2;
   final halfAfter = remaining - halfBefore;
 

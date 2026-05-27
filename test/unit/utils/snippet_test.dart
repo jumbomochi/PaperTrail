@@ -30,7 +30,7 @@ void main() {
     });
 
     test('truncates with ellipsis on both sides when match is in the middle', () {
-      final long = 'a' * 200 + 'NEEDLE' + 'b' * 200;
+      final long = '${'a' * 200}NEEDLE${'b' * 200}';
       final s = buildSnippet(text: long, query: 'needle', maxLength: 60);
       expect(s, isNotNull);
       expect(s!.prefix.startsWith('…'), isTrue);
@@ -41,7 +41,7 @@ void main() {
     });
 
     test('no leading ellipsis when match is near the start', () {
-      final text = 'NEEDLE at the start of a longer string ' + 'x' * 100;
+      final text = 'NEEDLE at the start of a longer string ${'x' * 100}';
       final s = buildSnippet(text: text, query: 'needle', maxLength: 60);
       expect(s, isNotNull);
       expect(s!.prefix.startsWith('…'), isFalse);
@@ -49,11 +49,23 @@ void main() {
     });
 
     test('no trailing ellipsis when match is near the end', () {
-      final text = 'x' * 100 + ' at the end NEEDLE';
+      final text = '${'x' * 100} at the end NEEDLE';
       final s = buildSnippet(text: text, query: 'needle', maxLength: 60);
       expect(s, isNotNull);
       expect(s!.suffix.endsWith('…'), isFalse);
       expect(s.prefix.startsWith('…'), isTrue);
+    });
+
+    test('returns match-only snippet when query is longer than maxLength', () {
+      final s = buildSnippet(
+        text: 'before NEEDLEISLONG after',
+        query: 'NEEDLEISLONG',
+        maxLength: 5,
+      );
+      expect(s, isNotNull);
+      expect(s!.matched, equals('NEEDLEISLONG'));
+      expect(s.prefix, equals('…'));
+      expect(s.suffix, equals('…'));
     });
 
     test('picks the first match when query appears multiple times', () {
