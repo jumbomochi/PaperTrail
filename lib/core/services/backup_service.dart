@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'package:paper_trail/core/database/database_helper.dart';
+import 'package:paper_trail/core/services/logger_service.dart';
 import 'package:sqflite/sqflite.dart';
 
 class BackupService {
+  static const int _currentVersion = 2;
+  static const String _tag = 'BackupService';
+
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
 
   Future<String> exportToJson() async {
@@ -11,20 +15,21 @@ class BackupService {
     final books = await db.query('books');
     final categories = await db.query('categories');
     final familyMembers = await db.query('family_members');
+    final quotes = await db.query('quotes');
 
-    // Exclude cover_image_path from books (local paths are not portable)
     final exportBooks = books.map((book) {
       final map = Map<String, dynamic>.from(book);
-      map.remove('cover_image_path');
+      map.remove('cover_image_path'); // local paths are not portable
       return map;
     }).toList();
 
     final backup = {
-      'version': 1,
+      'version': _currentVersion,
       'exported_at': DateTime.now().toUtc().toIso8601String(),
       'books': exportBooks,
       'categories': categories,
       'family_members': familyMembers,
+      'quotes': quotes,
     };
 
     return const JsonEncoder.withIndent('  ').convert(backup);
@@ -54,17 +59,21 @@ class BackupService {
     if (decoded['family_members'] is! List) {
       throw const FormatException('Missing or invalid family members data');
     }
+    if (decoded['quotes'] != null && decoded['quotes'] is! List) {
+      throw const FormatException('Invalid quotes data');
+    }
 
     return decoded;
   }
 
-  ({int books, int categories, int familyMembers}) getCounts(
+  ({int books, int categories, int familyMembers, int quotes}) getCounts(
     Map<String, dynamic> backup,
   ) {
     return (
       books: (backup['books'] as List).length,
       categories: (backup['categories'] as List).length,
       familyMembers: (backup['family_members'] as List).length,
+      quotes: ((backup['quotes'] as List?) ?? const []).length,
     );
   }
 
@@ -90,11 +99,39 @@ class BackupService {
         );
       }
 
+      final importedBookIds = <String>{};
       for (final book in backup['books'] as List) {
         final map = Map<String, dynamic>.from(book as Map);
         map['cover_image_path'] = null;
         await txn.insert(
           'books',
+          map,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        importedBookIds.add(map['id'] as String);
+      }
+
+      final quotes = (backup['quotes'] as List?) ?? const [];
+      for (final quote in quotes) {
+        final map = Map<String, dynamic>.from(quote as Map);
+        final bookId = map['book_id'] as String?;
+        if (bookId == null || !importedBookIds.contains(bookId)) {
+          final existing = await txn.query(
+            'books',
+            where: 'id = ?',
+            whereArgs: [bookId],
+            limit: 1,
+          );
+          if (existing.isEmpty) {
+            logger.warning(
+              'Skipping orphan quote ${map['id']} (book_id=$bookId)',
+              tag: _tag,
+            );
+            continue;
+          }
+        }
+        await txn.insert(
+          'quotes',
           map,
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
