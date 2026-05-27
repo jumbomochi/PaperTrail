@@ -55,7 +55,7 @@ class Book {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'review': review,
-      'review_updated_at': reviewUpdatedAt?.toUtc().millisecondsSinceEpoch,
+      'review_updated_at': reviewUpdatedAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -79,7 +79,7 @@ class Book {
       review: map['review'] as String?,
       reviewUpdatedAt: map['review_updated_at'] == null
           ? null
-          : DateTime.fromMillisecondsSinceEpoch(map['review_updated_at'] as int, isUtc: true),
+          : DateTime.fromMillisecondsSinceEpoch(map['review_updated_at'] as int),
     );
   }
 
