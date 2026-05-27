@@ -250,7 +250,10 @@ void main() {
       });
 
       test('fromMap parses review and review_updated_at', () {
-        final reviewTime = DateTime.utc(2026, 5, 1, 12);
+        // Use local-kind DateTime: the model stores epoch ms (timezone-agnostic
+        // integer) and fromMap returns a local-kind DateTime. Dart's
+        // DateTime equality requires same isUtc flag.
+        final reviewTime = DateTime(2026, 5, 1, 12);
         final book = createTestBook(
           review: 'Great book',
           reviewUpdatedAt: reviewTime,
