@@ -3,8 +3,6 @@ import 'package:paper_trail/core/services/logger_service.dart';
 import 'package:paper_trail/features/books/models/quote.dart';
 import 'package:paper_trail/features/books/repositories/quote_repository.dart';
 
-const _tag = 'QuoteProviders';
-
 final quoteRepositoryProvider = Provider<QuoteRepository>((ref) {
   return QuoteRepository();
 });
@@ -28,12 +26,13 @@ final quoteCountsProvider = FutureProvider<Map<String, int>>((ref) async {
   return repo.getQuoteCountsByBook();
 });
 
-class QuoteNotifier extends StateNotifier<AsyncValue<void>> {
+class QuoteNotifier extends StateNotifier<void> {
   final QuoteRepository _repository;
   final Ref _ref;
 
-  QuoteNotifier(this._repository, this._ref)
-      : super(const AsyncValue.data(null));
+  static const String _tag = 'QuoteNotifier';
+
+  QuoteNotifier(this._repository, this._ref) : super(null);
 
   Future<void> addQuote(Quote quote) async {
     try {
@@ -79,6 +78,6 @@ class QuoteNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final quoteNotifierProvider =
-    StateNotifierProvider<QuoteNotifier, AsyncValue<void>>((ref) {
+    StateNotifierProvider<QuoteNotifier, void>((ref) {
   return QuoteNotifier(ref.watch(quoteRepositoryProvider), ref);
 });
