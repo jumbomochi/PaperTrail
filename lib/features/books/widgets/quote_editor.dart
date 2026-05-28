@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class QuoteEditorResult {
   final bool isDelete;
@@ -67,7 +68,8 @@ class _QuoteEditorState extends State<QuoteEditor> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
     final pageStr = _pageController.text.trim();
-    final page = pageStr.isEmpty ? null : int.tryParse(pageStr);
+    final parsedPage = pageStr.isEmpty ? null : int.tryParse(pageStr);
+    final page = (parsedPage != null && parsedPage > 0) ? parsedPage : null;
     Navigator.of(context).pop(
       QuoteEditorResult.save(text: text, page: page),
     );
@@ -141,6 +143,7 @@ class _QuoteEditorState extends State<QuoteEditor> {
               child: TextField(
                 controller: _pageController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Page (optional)',
                   border: OutlineInputBorder(),
